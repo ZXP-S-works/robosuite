@@ -2,7 +2,7 @@ import collections
 from copy import copy
 
 import numpy as np
-
+import scipy.spatial.transform as sst
 from robosuite.models.objects import MujocoObject
 from robosuite.utils import RandomizationError
 from robosuite.utils.transform_utils import quat_multiply
@@ -194,8 +194,10 @@ class UniformRandomSampler(ObjectPositionSampler):
         """
         if self.rotation is None:
             rot_angle = np.random.uniform(high=2 * np.pi, low=0)
-        elif isinstance(self.rotation, collections.abc.Iterable):
+        elif len(self.rotation) == 2:
             rot_angle = np.random.uniform(high=max(self.rotation), low=min(self.rotation))
+        elif len(self.rotation) == 3:
+            rot_angle = np.asarray(self.rotation)
         else:
             rot_angle = self.rotation
 
@@ -206,6 +208,10 @@ class UniformRandomSampler(ObjectPositionSampler):
             return np.array([np.cos(rot_angle / 2), 0, np.sin(rot_angle / 2), 0])
         elif self.rotation_axis == "z":
             return np.array([np.cos(rot_angle / 2), 0, 0, np.sin(rot_angle / 2)])
+        elif self.rotation_axis == "xyz":
+            rand_rot = (np.random.uniform(size=3) - 0.5) * 2 * rot_angle
+            quat = sst.Rotation.from_euler('xyz', rand_rot).as_quat()
+            return np.concatenate([quat[3:], quat[:3]])
         else:
             # Invalid axis specified, raise error
             raise ValueError(

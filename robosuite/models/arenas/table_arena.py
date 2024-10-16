@@ -1,5 +1,6 @@
 import numpy as np
 
+import scipy.spatial.transform as sst
 from robosuite.models.arenas import Arena
 from robosuite.utils.mjcf_utils import array_to_string, string_to_array, xml_path_completion
 
@@ -53,12 +54,18 @@ class TableArena(Arena):
         """Configures correct locations for this arena"""
         self.floor.set("pos", array_to_string(self.bottom_pos))
 
+        # rand_rot = np.asarray([0.1 * np.pi, 0, 0])
+        rand_rot = np.asarray([0, 0, 0])
+        quat = sst.Rotation.from_euler('xyz', rand_rot).as_quat()
+        quat = np.concatenate([quat[3:], quat[:3]])  # wxyz
         self.table_body.set("pos", array_to_string(self.center_pos))
+        self.table_body.set("quat", array_to_string(quat))
         self.table_collision.set("size", array_to_string(self.table_half_size))
         self.table_collision.set("friction", array_to_string(self.table_friction))
         self.table_visual.set("size", array_to_string(self.table_half_size))
 
         self.table_top.set("pos", array_to_string(np.array([0, 0, self.table_half_size[2]])))
+        self.table_top.set("quat", array_to_string(quat))
 
         # If we're not using legs, set their size to 0
         if not self.has_legs:
